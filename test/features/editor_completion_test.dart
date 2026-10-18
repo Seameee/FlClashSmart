@@ -84,6 +84,10 @@ void main() {
       expect(_labels(_complete('dns:\n  enhanced-mode: fa|')), ['fake-ip']);
     });
 
+    test('offers every tun stack the core reads', () {
+      expect(_labels(_complete('tun:\n  stack: m|')), contains('mips'));
+    });
+
     test('offers the fields of the proxy type', () {
       const vmess = 'proxies:\n  - name: a\n    type: vmess\n    alt|';
       expect(_labels(_complete(vmess)), contains('alterId'));
