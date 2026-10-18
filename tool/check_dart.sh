@@ -26,15 +26,15 @@ dart format --output=none --set-exit-if-changed lib test tool setup.dart
 
 flutter analyze --no-fatal-infos
 
-# The native build hooks compile the Go core and the Rust bridge. That is the
-# release build's job, not this one, so disable them for the test run and put
-# pubspec.yaml back afterwards.
+# The Go core is the release build's job, not this one, so disable that hook
+# and put pubspec.yaml back afterwards. The Rust bridge stays on: the editor
+# tests load librust_api.so, which only the hook builds.
 cp pubspec.yaml pubspec.yaml.ci-backup
 restore_pubspec() {
   mv pubspec.yaml.ci-backup pubspec.yaml
 }
 trap restore_pubspec EXIT
 
-yq -i '.hooks.user_defines.setup.build_assets = false | .hooks.user_defines.rust_api.build_assets = false' pubspec.yaml
+yq -i '.hooks.user_defines.setup.build_assets = false' pubspec.yaml
 
 flutter test
