@@ -4,8 +4,10 @@
 CI／发布／测试／群组支持），内核子模块 4 个（chen 的适配补丁 + 我们 3 个 Smart fix）。
 其余全部来自上游，因此更新基本是机械操作。
 
-最近一次实测：**2026-10-03**。上游 ref：`chen08209/FlClash` main `4b59eca`、`vernesong/Alpha` `baef5ee5`、
-`chen/Clash.Meta` `8597778c`。注意 vernesong 在 2026-10-01 的 `9150980a` 把 `component/smart/` 整个重写了：
+最近一次实测：**2026-10-18**。上游 ref：`chen08209/FlClash` main `4b59eca`、`vernesong/Alpha` `83e67d0c`、
+`chen/Clash.Meta` `8597778c`。本次把内核那 4 个自有补丁整体 rebase 到 `83e67d0c`，**零冲突**；顺带把
+`core/go.mod` 的 `mieru` / `sing-wireguard` 跟到上游版本（`go mod tidy` 只动这两行）。
+注意 vernesong 在 2026-10-01 的 `9150980a` 把 `component/smart/` 整个重写了：
 `common.go` 与 `cachefile.go` 被删除，`memory.go` 改名 `cache.go`，新增 `store.go` / `target.go` / `exit.go`
 （exit 探测 + 可疑出口判定）。所以内核那 3 个老冲突文件会变，Smart 侧的补丁要按新 API 解。
 
@@ -13,14 +15,14 @@ CI／发布／测试／群组支持），内核子模块 4 个（chen 的适配�
 
 ```
 主仓库（Flutter + Go 桥接）
-├── origin:   你的 fork（如 leiyangyou/FlClashSmart）
+├── origin:   你的 fork（如 Seameee/FlClashSmart）
 ├── upstream: chen08209/FlClash              ← 主仓库上游
 ├── satar07:  Satar07/FlClashSmart           ← 来源 fork（可选，用于对比）
 │
 ├── lib/ … android/ …                      ← chen08209/FlClash + 4 个 Smart commit
 │
 └── core/Clash.Meta（子模块）= 内核
-    ├── origin:    你的内核 fork（如 leiyangyou/FlClashCore，分支 FlClash-smart-rebase）
+    ├── origin:    你的内核 fork（如 Seameee/FlClashCore，分支 FlClash-smart-rebase）
     ├── vernesong: vernesong/mihomo Alpha    ← Smart 内核上游（LightGBM/leaves）
     └── chen:      chen08209/Clash.Meta      ← FlClash 适配补丁来源
 ```
