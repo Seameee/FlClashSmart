@@ -82,21 +82,20 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
         run: flutter build apk --debug --target-platform android-arm64
 
-      # A debug APK packs every ABI unless the build was narrowed, and a missing
-      # Core is exactly what this job exists to catch.
-      - name: Verify the Core and the Helper are aarch64
+      # A missing Core, or a Helper built for another ABI, is exactly what this
+      # job exists to catch: both only fail at runtime otherwise.
+      - name: Verify the APK holds one aarch64 ABI
         run: |
           apk=build/app/outputs/flutter-apk/app-debug.apk
           test -f "$apk"
+          abis="$(unzip -Z1 "$apk" | sed -n 's|^lib/\([^/]*\)/.*|\1|p' | sort -u)"
+          echo "ABIs: $abis"
+          test "$abis" = arm64-v8a
           for so in libclash librust_api; do
             unzip -p "$apk" "lib/arm64-v8a/$so.so" > "/tmp/$so.so"
             file "/tmp/$so.so"
             file "/tmp/$so.so" | grep -q 'ARM aarch64'
           done
-          if unzip -l "$apk" | grep -q 'lib/arm64-v8a/.*x86'; then
-            echo 'an x86 library leaked into the arm64 APK' >&2
-            exit 1
-          fi
 
       - name: Upload the APK
         uses: actions/upload-artifact@v4
