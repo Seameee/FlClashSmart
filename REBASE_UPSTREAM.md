@@ -124,7 +124,7 @@ merge 会留下 `MERGE_HEAD` 与一次「Merge remote-tracking branch 'upstream/
 | `lib/models/clash_config.dart` | 取上游，然后补：`defaultGeoXUrl` 的 `MODEL`、`ProxyGroup` 的 5 个 smart 字段与 `definition` 里的 smart 输出 |
 | `lib/models/state.dart`、`lib/providers/state/*`、`lib/providers/actions/setup.dart`、`lib/common/preferences.dart` | 取上游（profile-keys 删掉）。`preferences.dart` 里补回 `getModelAssetHash`/`setModelAssetHash`，改用上游的 `_store.value` 形式 |
 | `lib/database/{database,groups}.dart` | **取上游**。上游把 `proxyGroups` 的整排列换成单个 `definition` JSON 列（`_moveGroupOptionsToDefinition`，v18），smart 选项自动跟着 JSON 走，不再需要 5 个独立列 |
-| 数据库版本 | `schemaVersion` 22 → **23**（跟上游）。fork 旧库（v11/v12）升上来时，上游 v17/v18 迁移会重建 profiles、把群组列折进 `definition`；**fork 那 5 个 smart 列里的旧值不会迁移**，升级后需要在编辑器里重设 |
+| 数据库版本 | `schemaVersion` 22 → **23**（跟上游）。fork 旧库（v11/v12）升上来时，上游 v17 迁移会**清空 `proxy_groups`**（`_migrateToCustomProfiles` 有意重建该表，上游自己的测试就断言升完为空），所以 fork 那 5 个 smart 列连同所在的行一起没了，群组要在编辑器里重设；这不值得写迁移去救，写在本文件里就够 |
 | `lib/views/profiles/overwrite/custom/groups.dart` | 上游删了整页：跟随删除。smart 选项行因此在 UI 上暂时没有入口（见「Smart 验证清单」的已知缺口） |
 | `lib/common/constant.dart` | 保留 `MODEL`/`modelAssetHashFile`/`modelAssetHashKey`；`repository` 用本 fork（`Seameee/FlClashSmart`），上游删掉的 `dialogCommonWidth`/`defaultExternalController` 不要留 |
 | `linux/packaging/*/make_config.yaml` | `startup_wm_class` 用 **`com.flsmart.clash`**（上游新加的键，值必须与 `linux/CMakeLists.txt` 的 `APPLICATION_ID` 一致，`test/tool/packaging_config_test.dart` 会查） |
@@ -210,10 +210,11 @@ flutter build apk --debug --target-platform android-arm64
 - [ ] `lib/views/resources.dart` 的 `_geoFileName` 处理 `GeoResource.MODEL`
 - [ ] `lib/common/task.dart` 写 `lgbm-url`，且 `geox-url` 里不含 `model`
 - [ ] `core/geo.go` 有 `"MODEL"` 资源；`core/proxy.go` 的 `isProxyGroupType` 含 `constant.Smart`
-- [ ] **已知缺口（不是回归）**：群组编辑器没有 smart 选项行——上游删掉了 fork 曾扩写的
-  `lib/views/profiles/overwrite/custom/groups.dart` 整页。6 个 smart 字段只存在于 DB（`definition` JSON）
-  与 `lib/models/clash_config.dart`，编辑器改自己那几行时其余字段由 `ProxyGroup` 原地 `copyWith` 保留
-  （由 `test/database/proxy_group_options_test.dart` 守护）。要「有开关」得在上游新编辑器里自己加行。
+- [ ] **群组编辑器的 smart 选项**：上游新的 `lib/views/profiles/custom/groups.dart` 用 `_GroupOption` 枚举装配行，
+  fork 在这里补了 5 个：`policyPriority`、`useLightGBM`、`collectData`、`sampleRate`、`preferASN`（`appliesTo` 限
+  `GroupType.Smart`，`tolerance` 同时给 url-test 与 smart）。新增行要同时改 `appliesTo`/`isSetIn`/`reset`/`clear`
+  与 `_buildOption`，否则「添加设置项」的列表里不会出现；`test/views/custom_profile_edit_test.dart` 守着。
+  编辑器只改它自己那几行，其余字段由 `ProxyGroup` 原地 `copyWith` 保留（`test/database/proxy_group_options_test.dart`）。
 - [ ] 内核有 `case "smart"`、`component/smart/`、`component/updater/patch.go` 的 `GeoUpdateHook`
 - [ ] 内核有 chen 适配的 `dns/patch.go`、`component/resolver/patch.go`、`tunnel/patch.go` 的 `*Snapshot`
 - [ ] `core/` 与 `core/Clash.Meta/` 两个模块 `go build ./...` 通过

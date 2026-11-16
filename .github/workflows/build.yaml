@@ -37,6 +37,11 @@ jobs:
       - name: Test git hooks
         run: bash tool/hooks/test.sh
 
+      # This fork bumps a submodule pointer on every kernel update, and a bump
+      # pushed before the submodule commit makes every job fail at checkout.
+      - name: Check submodule pointers are fetchable
+        run: bash tool/check_submodules.sh
+
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:

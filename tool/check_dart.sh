@@ -8,8 +8,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-bash tool/check_commit_msg_test.sh
-bash tool/check_comment_density_test.sh
+bash tool/hooks/commit_msg_test.sh
+bash tool/hooks/comment_density_test.sh
 
 expected=$(shasum -a 256 assets/data/Model.bin | awk '{print $1}')
 actual=$(tr -d '[:space:]' < assets/data/Model.bin.sha256)
