@@ -1,4 +1,4 @@
-package com.flsmart.clash.common
+package com.flsmart.common
 
 /**
  * Only the newest request is ever pending: [replace] settles the request it

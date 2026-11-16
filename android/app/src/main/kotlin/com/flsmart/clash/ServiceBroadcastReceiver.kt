@@ -5,10 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
-import com.flsmart.clash.common.BroadcastAction
-import com.flsmart.clash.common.BroadcastLease
-import com.flsmart.clash.common.GlobalState
-import com.flsmart.clash.common.action
+import com.flsmart.common.BroadcastAction
+import com.flsmart.common.BroadcastLease
+import com.flsmart.common.GlobalState
+import com.flsmart.common.action
 import kotlinx.coroutines.launch
 
 class ServiceBroadcastReceiver : BroadcastReceiver() {
@@ -34,15 +34,9 @@ class ServiceBroadcastReceiver : BroadcastReceiver() {
 
     private suspend fun handleAction(action: String) {
         when (action) {
-            BroadcastAction.VPN_START_REQUESTED.action -> {
-                GlobalState.log("System requested VPN service start")
-                ServiceState.handleStartAction()
-            }
+            BroadcastAction.VPN_START_REQUESTED.action -> ServiceState.handleStartAction()
 
-            BroadcastAction.VPN_REVOKED.action -> {
-                GlobalState.log("VPN permission revoked")
-                ServiceState.handleVpnRevokeAction()
-            }
+            BroadcastAction.VPN_REVOKED.action -> ServiceState.handleVpnRevokeAction()
         }
     }
 

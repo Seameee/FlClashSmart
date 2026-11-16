@@ -1,4 +1,4 @@
-package com.flsmart.clash.common
+package com.flsmart.common
 
 import com.google.gson.annotations.SerializedName
 

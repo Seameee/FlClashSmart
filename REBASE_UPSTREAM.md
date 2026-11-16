@@ -1,15 +1,31 @@
-# 上游更新指南（Rebase 流程）
+# 上游更新指南（内核 rebase，主仓库 merge）
 
-两边都用 rebase，不用 merge。**自己的 commit 很少**：主仓库 20 个（Cyril 的 4 个 Smart 补丁 + 我们自己的
-CI／发布／测试／群组支持），内核子模块 4 个（chen 的适配补丁 + 我们 3 个 Smart fix）。
-其余全部来自上游，因此更新基本是机械操作。
+**内核用 rebase，主仓库用 merge。** 内核自有补丁少（chen 的适配补丁 + 我们 3 个 Smart fix），冲突面固定；
+主仓库自有 commit 有 36 个，而上游这一个月把 UI、Android 架构和 Core 协议都重写了，逐提交 rebase 会把
+同一批冲突重解几十遍，所以主仓库改成**一次 merge**。
 
-最近一次实测：**2026-10-18**。上游 ref：`chen08209/FlClash` main `4b59eca`、`vernesong/Alpha` `83e67d0c`、
-`chen/Clash.Meta` `8597778c`。本次把内核那 4 个自有补丁整体 rebase 到 `83e67d0c`，**零冲突**；顺带把
-`core/go.mod` 的 `mieru` / `sing-wireguard` 跟到上游版本（`go mod tidy` 只动这两行）。
-注意 vernesong 在 2026-10-01 的 `9150980a` 把 `component/smart/` 整个重写了：
-`common.go` 与 `cachefile.go` 被删除，`memory.go` 改名 `cache.go`，新增 `store.go` / `target.go` / `exit.go`
-（exit 探测 + 可疑出口判定）。所以内核那 3 个老冲突文件会变，Smart 侧的补丁要按新 API 解。
+最近一次实测：**2026-11-16**。上游 ref：`chen08209/FlClash` main `be847366`、
+`vernesong/Alpha` `c4df732a`、`chen/Clash.Meta` `FlClash` `5b453f80`。
+
+本次结果：
+
+- 内核：chen 的适配补丁已经从 1 个长成 10 个提交，整体 cherry-pick 到 `c4df732a` 之上，仍是 3 个老冲突文件；
+  我们的 3 个 Smart fix 零冲突。推成 `FlClash-smart-rebase` = `113bf520`。
+- 主仓库：一次 merge，86 个文件冲突，其中 android 36 个全部是包名改名（`com.follow.clash` →
+  `com.flsmart.clash`）撞上游重写的进程架构，用「取上游 + 脚本改名」批量解决。
+- **删掉了 fork 的 profile-keys 特性**（见下方「与上游的设计冲突」），其余只保留 Smart 那一条线。
+- `flutter analyze` 干净、`flutter test` 全绿；Android APK / 桌面端未构建（本机无 SDK/NDK）。
+
+## 与上游的设计冲突（2026-11 起）
+
+fork 曾用 10 个 commit 实现「**以配置文件为准**」：`getProfileKeys` core 方法、`useProfileSettings` 开关、
+`ProfileOwnedConfig`、per-key 的 `appOwned()` 包装与相关测试。
+上游在 `491fae10 feat(views)!: set DNS, NTP, sniffer and TUN key by key` 里给出相反答案：
+**BREAKING CHANGE：DNS/NTP 覆盖开关被移除，选中的 key 应用到每个 profile**，也就是「以 App 设置为准」。
+
+两者是同一问题的相反答案，同时存在会互相打架。**2026-11-16 起跟上游走**：删除 fork 的 profile-keys 整条线
+（含 `test/common/task_profile_settings_test.dart`、`test/views/general_view_test.dart` 等），
+旧实现留在 tag `app-backup-2026-11-16` 与 `pre-*` 历史里，需要时可取。
 
 ## 项目结构
 
@@ -19,7 +35,7 @@ CI／发布／测试／群组支持），内核子模块 4 个（chen 的适配�
 ├── upstream: chen08209/FlClash              ← 主仓库上游
 ├── satar07:  Satar07/FlClashSmart           ← 来源 fork（可选，用于对比）
 │
-├── lib/ … android/ …                      ← chen08209/FlClash + 4 个 Smart commit
+├── lib/ … android/ …                      ← chen08209/FlClash + 36 个 fork commit
 │
 └── core/Clash.Meta（子模块）= 内核
     ├── origin:    你的内核 fork（如 Seameee/FlClashCore，分支 FlClash-smart-rebase）
@@ -27,11 +43,10 @@ CI／发布／测试／群组支持），内核子模块 4 个（chen 的适配�
     └── chen:      chen08209/Clash.Meta      ← FlClash 适配补丁来源
 ```
 
-**内核分支 = `vernesong/Alpha` + chen 的适配补丁（cherry-pick，保留作者）+ 我们 3 个 Smart fix。**
+**内核分支 = `vernesong/Alpha` + chen 的 FlClash 适配提交（cherry-pick，保留作者）+ 我们 3 个 Smart fix。**
 
-关键点：**不再维护自己的适配补丁副本**。以前内核里有一个第三方（Cyril）的适配补丁，与 chen 的补丁平行演进，
-导致 chen 的适配改进进不来、每次更新都要手工重解。现在 chen 的适配补丁整块 cherry-pick 进来，
-冲突只发生在 vernesong 与 chen 都改过的少数文件（见下表，实测 3 个）。
+关键点：**不再维护自己的适配补丁副本**。chen 的适配提交整块 cherry-pick 进来，冲突只发生在
+vernesong 与 chen 都改过的少数文件（见下表，2026-11-16 实测仍是 3 个）。
 
 ## 前置
 
@@ -62,31 +77,25 @@ git fetch chen FlClash
 git rebase --onto vernesong/Alpha $(git rev-parse chen/FlClash) FlClash-smart-rebase
 ```
 
-**情况 B：chen 也更新了**（chen 的适配 commit 是 force-rebase 的单 commit，SHA 会变）
+**情况 B：chen 也更新了**（chen 会把自己的适配提交 rebase 到新上游上，SHA 会变）
 
 ```bash
 BACKUP=kernel-backup-$(date +%F)
 git checkout -B FlClash-smart-rebase vernesong/Alpha
-git cherry-pick -x $(git rev-parse chen/FlClash)          # chen 的最新适配补丁
+# chen 的适配提交有多个，按时间顺序整段 cherry-pick
+git cherry-pick -x $(git rev-list --reverse $(git merge-base chen/FlClash vernesong/Alpha)..chen/FlClash)
 git cherry-pick $(git rev-parse $BACKUP~2) $(git rev-parse $BACKUP~1) $(git rev-parse $BACKUP)  # 我们 3 个 Smart fix
 ```
 
-### 内核已知冲突（2026-10-03 实测，chen 的适配补丁仍然只与这 3 个文件冲突）
+### 内核已知冲突（2026-11-16 实测，仍只有这 3 个文件）
 
 | 文件 | 冲突原因 | 处理 |
 |------|---------|------|
 | `component/updater/update_geo.go` | chen 加 `sendGeoUpdateStatus`/`Chtimes`；vernesong 用 `geodata.VerifyGeodataBytes` 取代 `geoLoader` | 保留 chen 的状态通知 + **保留 vernesong 的 `VerifyGeodataBytes`**；不要恢复 `geodata.GetGeoDataLoader("standard")` |
-| `tunnel/statistic/manager.go` | chen 加 6 个 `proxy*` 计数器；vernesong 加 `smartTarget` | **并集**（两者都留） |
-| `tunnel/statistic/tracker.go` | chen 把变量改名 `tt` 并加 `Push*` 调用；vernesong 加 `trackerUUID`/`metadata.UUID` | 保留 UUID 行 + 用 `tt` 命名 |
+| `tunnel/statistic/manager.go` | chen 加 6 个 `proxy*` 计数器与 `direct` 标记；vernesong 加 `smartTarget` 与 bucketWindow | **并集**（两者都留） |
+| `tunnel/statistic/tracker.go` | chen 把变量改名 `tt` 并加 `Push*(direct, …)`、`IsDirect`；vernesong 加 `trackerUUID`/`metadata.UUID` 与 `uploadBucketWindow` | 保留 UUID 与 bucketWindow 行 + 用 `tt` 命名 + 保留 `direct` |
 
-我们那 3 个 Smart fix 里只有一个会冲突：`fix(smart): log LightGBM fallback reasons and model feature count`
-在 `component/smart/lightgbm/lightgbm.go`。上游已经改了这套 API，**以上游为准**，只保留我们的日志：
-
-- `transforms.IsCompatibleWith(getDefaultFeatureOrder())` → 上游变成 `transforms.IsCompatible()`（`getDefaultFeatureOrder` 已不存在）。
-- `atomicRecord.Get("success").(int64)` 之类的字符串取值 → 上游用类型化访问器 `atomicRecord.Success()` / `.LossRate()`，用上游的。
-- 我们加的 `log.Warnln("[Smart] LightGBM skipped: feature order incompatible, ...")` 和模型加载日志要留下。
-
-处理原则：**保留 Smart 内核能力（LightGBM/leaves/smartTarget）+ 贴近 chen 的适配逻辑，适配新的 mihomo API。**
+处理原则：**保留 Smart 内核能力（LightGBM/leaves/smartTarget）+ 贴近 chen 的适配逻辑**，适配新的 mihomo API。
 解决后 `gofmt`，并确认 `git grep -c '^<<<<<<<'` 为 0。
 
 ## 二、主仓库更新
@@ -94,79 +103,63 @@ git cherry-pick $(git rev-parse $BACKUP~2) $(git rev-parse $BACKUP~1) $(git rev-
 ```bash
 git tag -f app-backup-$(date +%F) HEAD
 git fetch upstream main
-git rebase upstream/main
+git log --oneline origin/smart --not HEAD   # 有输出 = 远端有我没有的 commit，先 cherry-pick 再动
+git merge upstream/main
 ```
 
-> **force-push 前先看远端有没有别人（或 CI）加的 commit。** rebase 后本地历史被重写，
-> `--force-with-lease` 只保证“远端没有在 fetch 之后变过”，不保证远端那些 commit 是我的。
-> 实测 2026-10-03 就吃了一次：`origin/smart` 上有一个 2026-09-27 的
-> `ci(android): build the armeabi-v7a APK alongside arm64`（`e253dae`），force-push 直接把它盖掉，
-> 只能再从本地对象库 cherry-pick 回来。所以推之前先跑：
->
-> ```bash
-> git fetch origin
-> git log --oneline origin/smart --not HEAD   # 有输出 = 这些是我可能盖掉的东西
-> ```
->
-> 有输出就先 cherry-pick（保留作者与日期）再推；没有才 force-push。
+merge 会留下 `MERGE_HEAD` 与一次「Merge remote-tracking branch 'upstream/main'」。合并提交信息里写清楚
+采用/放弃了哪些 fork 特性（例如 2026-11-16 那次写明「跟上游改用按键覆盖，删掉 profile-keys」）。
 
-主仓库 20 个 commit，按性质分组（2026-10-03 实测的冲突面）：
+### 主仓库已知冲突（2026-11-16 实测 86 个文件）
 
-| 类 | Commit | 内容 | 冲突 |
-|------|--------|------|---------|
-| Smart | `feat: Smart Core integration` | Model.bin + sha256、`core/hub.go` 的 MODEL 资源、controller、config 字段、`GeoResource.MODEL`、子模块指针、`core/go.mod\|go.sum` | 中：子模块指针、`core/go.mod|go.sum`、`lib/common/constant.dart` |
-| Smart | `feat(groups): support smart proxy groups` | `GroupType.Smart`、DB 列、解析 | 低 |
-| Smart | `feat(overwrite): keep smart group options through the editors` | 编辑器保留 6 个 smart 选项、编辑器行 | **高**：DB schema 与上游 `strategy` 撞车（见下表） |
-| Smart | `chore(core): pick up the LightGBM updater temp dir fix` | 子模块指针 | 低（指针取新内核） |
-| 包名 | `chore: rename package from com.follow.clash to com.flsmart.clash` | Android 包名、Gradle、平台配置 | **高**：upstream 重构过 Android 进程架构，import 列表全撞 |
-| 文档 | `docs: update to rebase workflow guide` | REBASE_UPSTREAM.md（新）、READMEs、CLAUDE.md | 中：CLAUDE.md 上游已删 |
-| 发布 | `chore: bump version …` / `chore(release): v0.8.100` | 版本号、Model.bin.sha256、CHANGELOG | 中：均为生成物 |
-| CI/测试 | `ci:*`、`test(android)`、`test(views)`、`chore(codegen)` | 发布 job、dart 检查、包名测试、资源页行数 | 低～中：生成物 + 行数断言 |
-
-### 主仓库已知冲突
-
-| 文件 | 策略 |
+| 区域 | 策略 |
 |------|------|
-| `pubspec.yaml` | 版本号用上游 +1（如上游 `0.8.98+2026091401` → `0.8.99+2026091402`）；依赖用上游 |
-| `.github/workflows/build.yaml` | 保留 Smart 的 CI（`ref: smart`）；上游已删除 changelog 自动生成 job 与 `.github/scripts/generate_release_notes*.sh`，跟随上游 |
-| `android/*/build.gradle.kts` | 保留 `com.flsmart.clash` 的 `namespace`/`applicationId` |
-| `android/core/build.gradle.kts` | 跟随上游（`copyNativeLibs` 已废弃，改用 setup hook + native task guard） |
-| `core/Clash.Meta` | 保留新的内核指针（rebase 后指向重构后的内核 HEAD） |
-| 所有 `com.follow.clash` | 仅限上一个 commit 触及的文件；`plugins/wifi_ssid` 与部分 `test/` 保留原包名 |
-| `lib/enum/enum.dart` | 保留 `GeoResource.MODEL`（`@JsonValue('model')`） |
-| `lib/models/clash_config.dart` | `defaultGeoXUrl` 保留 `GeoResource.MODEL` |
-| `lib/state.dart` | 上游已把对话框迁到 `lib/common/dialog.dart`，Smart 侧多出的 `showMessage` 为死代码，删除 |
-| `lib/database/{groups,database}.dart` + `lib/models/clash_config.dart` | **并集**：上游的 `strategy`（v7 加的）与我们 5 个 smart 列（新的 v11：`policy_priority`、`use_light_g_b_m`、`collect_data`、`sample_rate`、`prefer_a_s_n`；`tolerance` 属于上游）。`schemaVersion` 取 **11**，smart 列的 `_addColumnIfMissing` 放进 `if (from < 11)`（幂等，能从我们 fork 旧的 v4 库直接升上来） |
-| `test/database/generated_contract_test.dart` | 列数 24 → **29**（+5 列） |
-| `test/database/migration_v1_to_v2_test.dart` | 版本断言 10 → 11；新增 `_downgradeToV10`（DROP 那 5 列，并让 `_downgradeToV9` 先调它）与 v11 升级测试 |
-| `lib/**/generated/*.g.dart`、`*.freezed.dart` | **生成物**：取上游版本，rebase 结束后用 `dart run build_runner build --delete-conflicting-outputs` 重生成（见下） |
-| `README.md` / `README_zh_CN.md` / `CHANGELOG.md` / `changelog.json` | 上游整篇重写／本身就是生成物：取上游；fork 的发布说明由 `tool/changelog.dart` 在发布时重生成 |
-| `CLAUDE.md` | 上游已删除（内容并入 `AGENTS.md`）：删掉，把 fork 本地 CI 说明搬进本文件（见下） |
-| `android/service/.../SuspendModule.kt` | 上游删掉了 Doze 挂起：跟随上游删除，`core.cpp` 的 `Core_suspended` 与 Kotlin 的 `suspended` 一起删 |
-| `android/core/.../InvokeInterface.kt` | `onResult` 用上游的 `ByteArray?`（`Core.kt` 内已 `decodeToString()`），我们旧的 `String?` 不要 |
-| `android/**` 其余 import 冲突 | 上游新增的 `Build`/`ContextCompat` 等保留，其余用 `com.flsmart.*` |
+| `android/**`（36 个） | **整棵树取上游**（`git rm -r -f android && git checkout upstream/main -- android`），再跑包名改名脚本。上游改成 gomobile 绑定 Core，旧的 `core.cpp` / `jni_helper.*` / `InvokeInterface.kt` 全部消失，不要试图手工 merge |
+| 包名改名映射 | `com/follow/clash/core` → `com/flsmart/core`、`com/follow/clash/common` → `com/flsmart/common`、`com/follow/clash/service` → `com/flsmart/clash/service`、`com/follow/clash` → `com/flsmart/clash`（**长前缀先替换**）；路径与文本都要改，含 `namespace`/`applicationId`/JNI 符号/aidl |
+| `android/app/google-services.json` | 上游删掉 Firebase：跟随删除，`Setup Android Signing` 里的 `SERVICE_JSON` guard 一并删 |
+| `core/**`（Go 桥） | **整棵树取上游**（`core/hub.go` 已拆成 hooks/delay/connection/… 一堆文件），然后按下面「core 移植清单」补回 fork 的部分；`core/Clash.Meta` 的 gitlink 手工 `git add` 成新内核 HEAD |
+| `core` 移植清单 | ① `proxy.go` 的 `isProxyGroupType` 加 `constant.Smart`；② `geo.go` 的 `geoResources` 加 `"MODEL"`；③ `go mod tidy` |
+| `lib/core/{interface,method,controller}.dart` | 上游把 Core 协议整体改名（`core.init` / `config.setup` / …），**取上游**；fork 的 `getProfileKeys` 随 profile-keys 一起删 |
+| `lib/common/task.dart` | 取上游，然后补两处：`rawConfig['geox-url']` 过滤掉 `GeoResource.MODEL`，另写 `rawConfig['lgbm-url']` |
+| `lib/models/clash_config.dart` | 取上游，然后补：`defaultGeoXUrl` 的 `MODEL`、`ProxyGroup` 的 5 个 smart 字段与 `definition` 里的 smart 输出 |
+| `lib/models/state.dart`、`lib/providers/state/*`、`lib/providers/actions/setup.dart`、`lib/common/preferences.dart` | 取上游（profile-keys 删掉）。`preferences.dart` 里补回 `getModelAssetHash`/`setModelAssetHash`，改用上游的 `_store.value` 形式 |
+| `lib/database/{database,groups}.dart` | **取上游**。上游把 `proxyGroups` 的整排列换成单个 `definition` JSON 列（`_moveGroupOptionsToDefinition`，v18），smart 选项自动跟着 JSON 走，不再需要 5 个独立列 |
+| 数据库版本 | `schemaVersion` 22 → **23**（跟上游）。fork 旧库（v11/v12）升上来时，上游 v17/v18 迁移会重建 profiles、把群组列折进 `definition`；**fork 那 5 个 smart 列里的旧值不会迁移**，升级后需要在编辑器里重设 |
+| `lib/views/profiles/overwrite/custom/groups.dart` | 上游删了整页：跟随删除。smart 选项行因此在 UI 上暂时没有入口（见「Smart 验证清单」的已知缺口） |
+| `lib/common/constant.dart` | 保留 `MODEL`/`modelAssetHashFile`/`modelAssetHashKey`；`repository` 用本 fork（`Seameee/FlClashSmart`），上游删掉的 `dialogCommonWidth`/`defaultExternalController` 不要留 |
+| `linux/packaging/*/make_config.yaml` | `startup_wm_class` 用 **`com.flsmart.clash`**（上游新加的键，值必须与 `linux/CMakeLists.txt` 的 `APPLICATION_ID` 一致，`test/tool/packaging_config_test.dart` 会查） |
+| `pubspec.yaml` | 版本号用上游 +1（`0.9.3+2026110401` → `0.9.4+2026111601`）；依赖用上游 |
+| `.gitmodules` | 只留 `core/Clash.Meta`（我们的 fork）与 `plugins/prism_ui`（上游新插件，URL 改 https）；`plugins/flutter_distributor`（`setup.dart` 用 `pub global activate` 装）与 `plugins/tray_manager`（已被第一方 `plugins/tray` 取代）删除 |
+| `arb/**`、`lib/l10n/**`、`**/generated/**` | **取上游**，合并后用 `dart run build_runner build` 重生成 |
+| `README.md` / `CHANGELOG.md` / `changelog.json` | 上游整篇重写／本身就是生成物：取上游；fork 的发布说明由 `tool/changelog.dart` 在发布时重生成 |
+| 测试断言 | 资源页 `FutureBuilder<FileInfo?>` 数量改成 `GeoResource.values.length`；`custom_import_test.dart` 里「app 装不下的群组」样例从 `type: smart` 换成 `type: not-a-group`（smart 现在是支持的） |
 
-### fork 本地 CI 分歧（`build.yaml` 是上游文件，rebase 会重放上游版本，必须保留这几处）
+### fork 本地 CI 分歧（`build.yaml` 是上游文件，merge/rebase 后必须保留这几处）
 
 - `upload` job 用 `if: false` 关掉。上游那个 job 会通过他们 runner 上的本地 bot API（`localhost:8081`）
   往 `@FlClash` 频道播报，然后删掉并重新发布 tag 的 release；本 fork 唯一的发布者是 `release-android-arm64.yml`。
-- `Setup Android Signing` 只在对应 secret 存在时才写 `google-services.json` / `keystore.jks`。没有这个 guard 时，
-  缺 `SERVICE_JSON` 会把空字符串解码到已签入的 stub 上，gradle 在 `processReleaseGoogleServices` 报
-  `Malformed root json`，于是每个 tag 构建都挂而分支构建正常。
-- `tool/check_dart.sh` 跑整个 dart job；`tool/check_submodules.sh` 会 fetch 每个子模块指针，避免子模块 commit
-  还没推就推了指针（否则 CI checkout 报 `did not contain <sha>`）。它只格式化 `lib test tool setup.dart`，绝不碰 vendored 的 `plugins/`。
+- `Setup Android Signing` 只在 `KEYSTORE` secret 存在时才写 `keystore.jks`。上游的写法会把空字符串解码到
+  文件里，缺 secret 时构建直接失败。
+- **不要恢复 `ref: smart`**（2026-11-16 删除）：它会让 tag/预览分支的构建去 checkout `smart`，
+  默认 ref 才是对的；上游那一步需要的是 `submodules: true`。
+- `tool/check_dart.sh` 跑整个 dart job（`release-android-arm64.yml` 在用）；`tool/check_submodules.sh`
+  会 fetch 每个子模块指针，避免子模块 commit 还没推就推了指针。它只格式化 `lib test tool setup.dart`，
+  绝不碰 vendored 的 `plugins/`。
 
-### Rebase 后（必做）
+### 合并后（必做）
 
 ```bash
-# 1. 同步 Go 依赖（两个模块都要）
+# 1. 重新生成（freezed / json / riverpod / drift / l10n）
+flutter pub get
+dart run build_runner build
+
+# 2. 同步 Go 依赖（两个模块都要）
 cd core/Clash.Meta && go mod tidy && cd ../..
 cd core && go mod tidy && cd ..
 
-# 2. 把新内核指针 + tidy 结果折进「Smart Core integration」commit
-git add core/Clash.Meta core/go.mod core/go.sum
-git commit --fixup=$(git log --format=%h --grep='Smart Core integration' -1)
-GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash upstream/main
+# 3. 提交：内核指针 + tidy 结果 + 生成物
+git add -A
+git commit
 ```
 
 ## 三、验证
@@ -176,44 +169,51 @@ GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash upstream/main
 cd core/Clash.Meta && go build ./... && go test ./dns/ -count=1 && cd ../..
 cd core && go build ./... && cd ..
 
+# Dart 侧
+flutter analyze --no-fatal-infos
+flutter test
+
 # Smart / 适配标记
 grep -c 'case "smart"' core/Clash.Meta/adapter/outboundgroup/parser.go     # 1
-ls core/Clash.Meta/component/smart/*.go | wc -l                            # 7（重写后：cache/exit/response/stats/store/target/weight）
+ls core/Clash.Meta/component/smart/*.go | wc -l                            # 7（cache/exit/response/stats/store/target/weight）
 ls core/Clash.Meta/dns/patch.go core/Clash.Meta/component/resolver/patch.go # chen 的适配
 grep -c 'GeoUpdateHook' core/Clash.Meta/component/updater/patch.go         # 3
 grep -c 'smartTarget' core/Clash.Meta/tunnel/statistic/manager.go          # 4
-
-# Android APK（只编 arm64）
-export PATH=$HOME/.local/rustshim:$PATH
-export JAVA_HOME=/Users/leiyang/Library/Java/JavaVirtualMachines/azul-17.0.3/Contents/Home
-export ANDROID_HOME=/opt/adt-bundle-mac-x86_64/sdk
-mise exec flutter@3.47.1 -- flutter build apk --debug --target-platform android-arm64
+grep -n 'MODEL' core/geo.go                                               # 1（MODEL 资源）
 ```
 
-本机环境备注（否则 native assets hook 会失败）：
+**`flutter analyze` 在含中文的路径下会崩**（分析服务器的 LSP 报文按字符而不是字节算长度，
+`…/DSH项目/…` 直接把 `analysis server exited with code 255` 打出来）。把仓库放到纯 ASCII 路径下再跑，
+或 `tar` 一份到 `/home/<你>/work/flclash` 里跑；git 操作仍留在原路径。
 
-- Flutter 用 CI 的 pin 版本（见 `.github/workflows/build.yaml` 的 `FLUTTER_VERSION`；当前 3.47.1）。
-  mise 里若只有旧版本会因 `riverpod_generator` 需要 Dart ≥3.12 而 `pub get` 失败。
-- NDK 用 `android/gradle/libs.versions.toml` 的 `ndkVersion`（当前 `28.2.13676358`），
-  `sdkmanager --sdk_root=$ANDROID_HOME "ndk;28.2.13676358"`。
-- `~/.local/rustshim/rustc` 是一个指向 rust-toolchain.toml 所 pin 的 1.95.0 的包装脚本：
-  Homebrew 的 rustc（1.98.1）在 PATH 上更靠前，而 hook 会过滤掉 `RUSTC` 环境变量，所以只能从 PATH 入手。
-  脚本内容：`exec "$HOME/.rustup/toolchains/1.95.0-aarch64-apple-darwin/bin/rustc" "$@"`
+```bash
+# Android APK（只编 arm64，需要 SDK + NDK，本机没有就跳过并说明）
+export ANDROID_HOME=<你的 SDK>
+flutter build apk --debug --target-platform android-arm64
+```
+
+- Flutter 用 CI 的 pin 版本（`.github/workflows/build.yaml` 的 `FLUTTER_VERSION`，当前 `3.47.6`）。
+  `riverpod_generator` 需要 Dart ≥3.12，旧版 Flutter 的 `pub get` 会失败。
+- NDK 用 `android/gradle/libs.versions.toml` 的 `ndkVersion`。
+- Rust helper（`services/helper`）需要 `cargo`/`rustc` 在 PATH 上；hook 会忽略 `RUSTC` 环境变量。
 - `File modified during build. Build must be rerun.` 是已知现象：Go core hook 在构建期间写
   `android/core/src/main/jniLibs`，Flutter 会自动重跑一次 gradle。
 
 ## 四、Smart 功能验证清单
 
 - [ ] `assets/data/Model.bin` 存在，且与 `assets/data/Model.bin.sha256` 一致（30 特征模型：文件头 `max_feature_idx=29`）
-- [ ] `lib/common/constant.dart` 有 `MODEL`、`modelAssetHashFile`
-- [ ] `lib/enum/enum.dart` 的 `GeoResource` 含 `MODEL`
-- [ ] `lib/models/clash_config.dart` 的 `defaultGeoXUrl` 含 `GeoResource.MODEL`
-- [ ] `lib/views/resources.dart` 处理 `GeoResource.MODEL`
-- [ ] **已知缺口（不是回归）**：群组编辑器 `lib/views/profiles/overwrite/custom/groups.dart` 没有 smart 选项行——
-  6 个 smart 字段只存在于 DB 层与 `lib/models/clash_config.dart`。编辑器只改它自己那几行，其余字段由
-  `ProxyGroup` 对象原地 `copyWith` 保留（由 `test/database/proxy_group_options_test.dart` 守护）。
-  要“有开关”得自己加行，不要让 rebase 去追一个不存在的功能。
-- [ ] CI 文件有 `ref: smart` 和 `com.flsmart.clash`
+  内核的 `IsCompatible()` 要求特征序 32 槽，30 槽的模型会被自动补齐（`30: exit_region`、`31: exit_asn_hash`），
+  老模型仍可用，只是这两槽为 0
+- [ ] `lib/common/constant.dart` 有 `MODEL`、`modelAssetHashFile`、`modelAssetHashKey`
+- [ ] `lib/enum/enum.dart` 的 `GeoResource` 含 `MODEL`（`@JsonValue('model')`）与 `configKey`
+- [ ] `lib/models/clash_config.dart` 的 `defaultGeoXUrl` 含 `GeoResource.MODEL`，`ProxyGroup` 有 5 个 smart 字段
+- [ ] `lib/views/resources.dart` 的 `_geoFileName` 处理 `GeoResource.MODEL`
+- [ ] `lib/common/task.dart` 写 `lgbm-url`，且 `geox-url` 里不含 `model`
+- [ ] `core/geo.go` 有 `"MODEL"` 资源；`core/proxy.go` 的 `isProxyGroupType` 含 `constant.Smart`
+- [ ] **已知缺口（不是回归）**：群组编辑器没有 smart 选项行——上游删掉了 fork 曾扩写的
+  `lib/views/profiles/overwrite/custom/groups.dart` 整页。6 个 smart 字段只存在于 DB（`definition` JSON）
+  与 `lib/models/clash_config.dart`，编辑器改自己那几行时其余字段由 `ProxyGroup` 原地 `copyWith` 保留
+  （由 `test/database/proxy_group_options_test.dart` 守护）。要「有开关」得在上游新编辑器里自己加行。
 - [ ] 内核有 `case "smart"`、`component/smart/`、`component/updater/patch.go` 的 `GeoUpdateHook`
 - [ ] 内核有 chen 适配的 `dns/patch.go`、`component/resolver/patch.go`、`tunnel/patch.go` 的 `*Snapshot`
 - [ ] `core/` 与 `core/Clash.Meta/` 两个模块 `go build ./...` 通过

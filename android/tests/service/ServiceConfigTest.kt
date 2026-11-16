@@ -1,6 +1,6 @@
 package com.flsmart.clash.service
 
-import com.flsmart.clash.common.AccessControlMode
+import com.flsmart.common.AccessControlMode
 import com.flsmart.clash.service.models.AccessControlProps
 import com.flsmart.clash.service.models.NotificationParams
 import com.flsmart.clash.service.models.VpnOptions

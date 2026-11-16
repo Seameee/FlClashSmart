@@ -1,7 +1,7 @@
 package com.flsmart.clash.service.models
 
-import com.flsmart.clash.common.GlobalState
-import com.flsmart.clash.core.Core
+import com.flsmart.common.GlobalState
+import com.flsmart.core.Core
 import com.google.gson.Gson
 
 private val gson = Gson()

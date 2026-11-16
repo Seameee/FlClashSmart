@@ -1,4 +1,4 @@
-package com.flsmart.clash.common
+package com.flsmart.common
 
 import com.google.gson.Gson
 import org.junit.Assert.assertEquals

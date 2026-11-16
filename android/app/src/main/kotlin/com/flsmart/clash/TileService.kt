@@ -3,9 +3,9 @@ package com.flsmart.clash
 import android.annotation.SuppressLint
 import android.os.Build
 import android.service.quicksettings.Tile
-import com.flsmart.clash.common.QuickAction
-import com.flsmart.clash.common.quickIntent
-import com.flsmart.clash.common.toPendingIntent
+import com.flsmart.common.QuickAction
+import com.flsmart.common.quickIntent
+import com.flsmart.common.toPendingIntent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -20,7 +20,6 @@ class TileService : android.service.quicksettings.TileService() {
         scope?.cancel()
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).also { scope ->
             scope.launch {
-                ServiceState.refresh()
                 ServiceState.runState.collect(::updateTile)
             }
         }

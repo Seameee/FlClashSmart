@@ -8,19 +8,19 @@ import android.os.Build
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
-import com.flsmart.clash.common.Components
-import com.flsmart.clash.common.GlobalState
-import com.flsmart.clash.common.QuickAction
-import com.flsmart.clash.common.quickIntent
-import com.flsmart.clash.common.receiveBroadcastFlow
-import com.flsmart.clash.common.startForeground
-import com.flsmart.clash.common.toPendingIntent
-import com.flsmart.clash.core.Core
+import com.flsmart.common.Components
+import com.flsmart.common.GlobalState
+import com.flsmart.common.QuickAction
+import com.flsmart.common.ensureNotificationChannel
+import com.flsmart.common.quickIntent
+import com.flsmart.common.receiveBroadcastFlow
+import com.flsmart.common.startForeground
+import com.flsmart.common.toPendingIntent
+import com.flsmart.core.Core
 import com.flsmart.clash.service.R
 import com.flsmart.clash.service.ServiceConfig
 import com.flsmart.clash.service.models.NotificationParams
 import com.flsmart.clash.service.models.getSpeedTrafficText
-import com.flsmart.clash.common.ensureNotificationChannel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -54,14 +54,19 @@ internal class NotificationModule(
         service.ensureNotificationChannel()
         update(ServiceConfig.notificationParams.value.extended)
         scope.launch {
-            service.receiveBroadcastFlow {
+            // Some ROMs, vivo's among them, drop updates posted behind the
+            // keyguard, so unlocking restarts the loop to post once more.
+            // SystemUI, an app, sends USER_PRESENT, which a receiver that is
+            // not exported never gets; all three actions are protected.
+            service.receiveBroadcastFlow(exported = true) {
                 addAction(Intent.ACTION_SCREEN_ON)
                 addAction(Intent.ACTION_SCREEN_OFF)
+                addAction(Intent.ACTION_USER_PRESENT)
             }.map { intent ->
-                intent.action == Intent.ACTION_SCREEN_ON
+                intent.action != Intent.ACTION_SCREEN_OFF
             }.onStart {
                 emit(isScreenOn())
-            }.distinctUntilChanged().collectLatest { screenOn ->
+            }.collectLatest { screenOn ->
                 if (!screenOn) return@collectLatest
                 combine(
                     flow {

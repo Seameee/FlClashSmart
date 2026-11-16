@@ -1,6 +1,6 @@
 package com.flsmart.clash.plugins
 
-import com.flsmart.clash.common.Components
+import com.flsmart.common.Components
 import com.flsmart.clash.invokeMethodOnMainThread
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
@@ -21,10 +21,6 @@ class TilePlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
 
     fun handleStart() {
         channel.invokeMethodOnMainThread("start")
-    }
-
-    fun handleStop() {
-        channel.invokeMethodOnMainThread("stop")
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {

@@ -1,4 +1,4 @@
-package com.flsmart.clash.common
+package com.flsmart.common
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit

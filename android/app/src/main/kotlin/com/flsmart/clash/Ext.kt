@@ -10,7 +10,7 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import androidx.core.graphics.drawable.toBitmap
-import com.flsmart.clash.common.GlobalState
+import com.flsmart.common.GlobalState
 import com.flsmart.clash.models.SharedState
 import com.google.gson.Gson
 import io.flutter.embedding.engine.FlutterEngine
