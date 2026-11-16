@@ -497,6 +497,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "closeConnections": MessageLookupByLibrary.simpleMessage(
       "Close connections",
     ),
+    "collectData": MessageLookupByLibrary.simpleMessage(
+      "Collect training data",
+    ),
     "color": MessageLookupByLibrary.simpleMessage("Color"),
     "colorStyle": MessageLookupByLibrary.simpleMessage("Color style"),
     "columns": MessageLookupByLibrary.simpleMessage("Columns"),
@@ -1523,6 +1526,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "pluginPassword": MessageLookupByLibrary.simpleMessage("Plugin password"),
     "pluginPath": MessageLookupByLibrary.simpleMessage("Plugin path"),
     "pluginUsername": MessageLookupByLibrary.simpleMessage("Plugin username"),
+    "policyPriority": MessageLookupByLibrary.simpleMessage("Policy priority"),
     "port": MessageLookupByLibrary.simpleMessage("Port"),
     "portConflictTip": MessageLookupByLibrary.simpleMessage(
       "Please enter a different port",
@@ -1532,6 +1536,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "portValue": m76,
     "ports": MessageLookupByLibrary.simpleMessage("Ports"),
     "preSharedKey": MessageLookupByLibrary.simpleMessage("Pre-shared key"),
+    "preferAsn": MessageLookupByLibrary.simpleMessage("Prefer the same ASN"),
     "preferred": MessageLookupByLibrary.simpleMessage("Preferred"),
     "prerequisites": MessageLookupByLibrary.simpleMessage("Prerequisites"),
     "pressKeyboard": MessageLookupByLibrary.simpleMessage(
@@ -1853,6 +1858,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "runtimeConfig": MessageLookupByLibrary.simpleMessage("Runtime config"),
     "safeMode": MessageLookupByLibrary.simpleMessage("Safe mode"),
     "safeModeAppTitle": m88,
+    "sampleRate": MessageLookupByLibrary.simpleMessage("Sample rate"),
     "saturation": MessageLookupByLibrary.simpleMessage("Saturation"),
     "save": MessageLookupByLibrary.simpleMessage("Save"),
     "saveChanges": MessageLookupByLibrary.simpleMessage("Save the changes?"),
@@ -1968,6 +1974,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "slide": MessageLookupByLibrary.simpleMessage("Slide"),
     "sliders": MessageLookupByLibrary.simpleMessage("Sliders"),
+    "smartGroup": MessageLookupByLibrary.simpleMessage("Smart"),
     "sniffProtocols": MessageLookupByLibrary.simpleMessage("Protocols"),
     "sniffer": MessageLookupByLibrary.simpleMessage("Sniffer"),
     "socksPort": MessageLookupByLibrary.simpleMessage("SOCKS port"),
@@ -2127,6 +2134,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "urlRewrite": MessageLookupByLibrary.simpleMessage("URL rewrite"),
     "urlTip": m98,
     "useHosts": MessageLookupByLibrary.simpleMessage("Use hosts"),
+    "useLightGBM": MessageLookupByLibrary.simpleMessage(
+      "Predict weights with LightGBM",
+    ),
     "useSystemHosts": MessageLookupByLibrary.simpleMessage("Use system hosts"),
     "usedShort": MessageLookupByLibrary.simpleMessage("used"),
     "usedTraffic": MessageLookupByLibrary.simpleMessage("Used traffic"),

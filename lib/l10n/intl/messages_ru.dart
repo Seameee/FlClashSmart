@@ -519,6 +519,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "closeConnections": MessageLookupByLibrary.simpleMessage(
       "Закрыть соединения",
     ),
+    "collectData": MessageLookupByLibrary.simpleMessage(
+      "Собирать данные для обучения",
+    ),
     "color": MessageLookupByLibrary.simpleMessage("Цвет"),
     "colorStyle": MessageLookupByLibrary.simpleMessage("Стиль палитры"),
     "columns": MessageLookupByLibrary.simpleMessage("Столбцы"),
@@ -1601,6 +1604,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "pluginUsername": MessageLookupByLibrary.simpleMessage(
       "Имя пользователя плагина",
     ),
+    "policyPriority": MessageLookupByLibrary.simpleMessage(
+      "Приоритет политики",
+    ),
     "port": MessageLookupByLibrary.simpleMessage("Порт"),
     "portConflictTip": MessageLookupByLibrary.simpleMessage(
       "Введите другой порт",
@@ -1610,6 +1616,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "portValue": m76,
     "ports": MessageLookupByLibrary.simpleMessage("Порты"),
     "preSharedKey": MessageLookupByLibrary.simpleMessage("Общий ключ"),
+    "preferAsn": MessageLookupByLibrary.simpleMessage(
+      "Предпочитать тот же ASN",
+    ),
     "preferred": MessageLookupByLibrary.simpleMessage("Предпочтительный"),
     "prerequisites": MessageLookupByLibrary.simpleMessage(
       "Предварительные условия",
@@ -1949,6 +1958,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "safeMode": MessageLookupByLibrary.simpleMessage("Безопасный режим"),
     "safeModeAppTitle": m88,
+    "sampleRate": MessageLookupByLibrary.simpleMessage("Доля выборки"),
     "saturation": MessageLookupByLibrary.simpleMessage("Насыщенность"),
     "save": MessageLookupByLibrary.simpleMessage("Сохранить"),
     "saveChanges": MessageLookupByLibrary.simpleMessage("Сохранить изменения?"),
@@ -2066,6 +2076,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "slide": MessageLookupByLibrary.simpleMessage("Сдвиг"),
     "sliders": MessageLookupByLibrary.simpleMessage("Ползунки"),
+    "smartGroup": MessageLookupByLibrary.simpleMessage("Smart"),
     "sniffProtocols": MessageLookupByLibrary.simpleMessage("Протоколы"),
     "sniffer": MessageLookupByLibrary.simpleMessage("Сниффер"),
     "socksPort": MessageLookupByLibrary.simpleMessage("Порт SOCKS"),
@@ -2237,6 +2248,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "urlRewrite": MessageLookupByLibrary.simpleMessage("Перезапись URL"),
     "urlTip": m98,
     "useHosts": MessageLookupByLibrary.simpleMessage("Использовать hosts"),
+    "useLightGBM": MessageLookupByLibrary.simpleMessage(
+      "Прогноз веса через LightGBM",
+    ),
     "useSystemHosts": MessageLookupByLibrary.simpleMessage(
       "Использовать системный hosts",
     ),

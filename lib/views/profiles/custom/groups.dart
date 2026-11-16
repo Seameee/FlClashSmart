@@ -42,7 +42,12 @@ enum _GroupOption {
   strategy,
   hashKey,
   hidden,
-  disableUDP;
+  disableUDP,
+  policyPriority,
+  useLightGBM,
+  collectData,
+  sampleRate,
+  preferASN;
 
   String label(AppLocalizations l) => switch (this) {
     emptyFallback => l.emptyFallback,
@@ -58,6 +63,11 @@ enum _GroupOption {
     hashKey => l.hashByInUser,
     hidden => l.hideFromList,
     disableUDP => l.disableUDP,
+    policyPriority => l.policyPriority,
+    useLightGBM => l.useLightGBM,
+    collectData => l.collectData,
+    sampleRate => l.sampleRate,
+    preferASN => l.preferAsn,
   };
 
   String section(AppLocalizations l) => switch (this) {
@@ -74,11 +84,21 @@ enum _GroupOption {
     hashKey ||
     hidden ||
     disableUDP => l.other,
+    policyPriority ||
+    useLightGBM ||
+    collectData ||
+    sampleRate ||
+    preferASN => l.smartGroup,
   };
 
   bool appliesTo(GroupType type, LoadBalanceStrategy? strategy) =>
       switch (this) {
-        tolerance => type == GroupType.URLTest,
+        tolerance => type == GroupType.URLTest || type == GroupType.Smart,
+        policyPriority ||
+        useLightGBM ||
+        collectData ||
+        sampleRate ||
+        preferASN => type == GroupType.Smart,
         defaultSelected => type == GroupType.Selector,
         _GroupOption.strategy => type == GroupType.LoadBalance,
         hashKey =>
@@ -101,6 +121,11 @@ enum _GroupOption {
     hashKey => group.hashKey != null,
     hidden => group.hidden != null,
     disableUDP => group.disableUDP != null,
+    policyPriority => group.policyPriority != null,
+    useLightGBM => group.useLightGBM != null,
+    collectData => group.collectData != null,
+    sampleRate => group.sampleRate != null,
+    preferASN => group.preferASN != null,
   };
 
   ProxyGroup reset(ProxyGroup group) => switch (this) {
@@ -119,6 +144,11 @@ enum _GroupOption {
     emptyFallback => group.copyWith(emptyFallback: _defaultEmptyFallback),
     defaultSelected => group.copyWith(defaultSelected: ''),
     hashKey => group.copyWith(hashKey: ''),
+    policyPriority => group.copyWith(policyPriority: ''),
+    useLightGBM => group.copyWith(useLightGBM: true),
+    collectData => group.copyWith(collectData: false),
+    sampleRate => group.copyWith(sampleRate: 1),
+    preferASN => group.copyWith(preferASN: true),
   };
 
   ProxyGroup clear(ProxyGroup group) => switch (this) {
@@ -135,6 +165,11 @@ enum _GroupOption {
     hashKey => group.copyWith(hashKey: null),
     hidden => group.copyWith(hidden: null),
     disableUDP => group.copyWith(disableUDP: null),
+    policyPriority => group.copyWith(policyPriority: null),
+    useLightGBM => group.copyWith(useLightGBM: null),
+    collectData => group.copyWith(collectData: null),
+    sampleRate => group.copyWith(sampleRate: null),
+    preferASN => group.copyWith(preferASN: null),
   };
 }
 
@@ -1067,6 +1102,74 @@ class _EditProxyGroupViewState extends ConsumerState<EditProxyGroupView> {
     );
   }
 
+  Widget _buildSwitchItem({
+    required String title,
+    required bool value,
+    required Widget leading,
+    required void Function(bool value) onChanged,
+  }) {
+    return _buildItem(
+      title: title,
+      leading: leading,
+      onPressed: () => onChanged(!value),
+      trailing: Switch(
+        value: value,
+        onChanged: (next) {
+          onChanged(next);
+        },
+      ),
+    );
+  }
+
+  Widget _buildPolicyPriorityItem(String? policyPriority, Widget leading) {
+    final appLocalizations = context.appLocalizations;
+    return _buildItem(
+      title: appLocalizations.policyPriority,
+      leading: leading,
+      trailing: FormRowTextField(
+        initialValue: policyPriority,
+        inputFormatters: TextInputLimits.limit(TextInputLimits.status),
+        onChanged: (value) {
+          ref
+              .read(proxyGroupProvider.notifier)
+              .update(
+                (state) => state.copyWith(
+                  policyPriority: value.isEmpty ? null : value,
+                ),
+              );
+        },
+        hintText: appLocalizations.optional,
+      ),
+    );
+  }
+
+  /// The core reads a rate in (0, 1]; anything else is left to its default.
+  Widget _buildSampleRateItem(double? sampleRate, Widget leading) {
+    final appLocalizations = context.appLocalizations;
+    return _buildItem(
+      title: appLocalizations.sampleRate,
+      leading: leading,
+      trailing: FormRowTextField(
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: TextInputLimits.decimalOnly(TextInputLimits.decimal),
+        initialValue: sampleRate?.toString(),
+        onChanged: (value) {
+          final rate = double.tryParse(value.replaceAll(',', '.'));
+          ref
+              .read(proxyGroupProvider.notifier)
+              .update(
+                (state) => state.copyWith(
+                  sampleRate: rate == null || rate <= 0 || rate > 1
+                      ? null
+                      : rate,
+                ),
+              );
+        },
+        hintText: appLocalizations.optional,
+      ),
+    );
+  }
+
   Widget _field<S>(
     S Function(ProxyGroup state) selector,
     Widget Function(S value) builder,
@@ -1325,6 +1428,52 @@ class _EditProxyGroupViewState extends ConsumerState<EditProxyGroupView> {
         option,
         (state) => state.disableUDP,
         (value) => _buildDisableUDPItem(value, leading),
+      ),
+      _GroupOption.policyPriority => _optionField(
+        option,
+        (state) => state.policyPriority,
+        (value) => _buildPolicyPriorityItem(value, leading),
+      ),
+      _GroupOption.useLightGBM => _optionField(
+        option,
+        (state) => state.useLightGBM,
+        (value) => _buildSwitchItem(
+          title: appLocalizations.useLightGBM,
+          value: value ?? false,
+          leading: leading,
+          onChanged: (next) => ref
+              .read(proxyGroupProvider.notifier)
+              .update((state) => state.copyWith(useLightGBM: next)),
+        ),
+      ),
+      _GroupOption.collectData => _optionField(
+        option,
+        (state) => state.collectData,
+        (value) => _buildSwitchItem(
+          title: appLocalizations.collectData,
+          value: value ?? false,
+          leading: leading,
+          onChanged: (next) => ref
+              .read(proxyGroupProvider.notifier)
+              .update((state) => state.copyWith(collectData: next)),
+        ),
+      ),
+      _GroupOption.sampleRate => _optionField(
+        option,
+        (state) => state.sampleRate,
+        (value) => _buildSampleRateItem(value, leading),
+      ),
+      _GroupOption.preferASN => _optionField(
+        option,
+        (state) => state.preferASN,
+        (value) => _buildSwitchItem(
+          title: appLocalizations.preferAsn,
+          value: value ?? false,
+          leading: leading,
+          onChanged: (next) => ref
+              .read(proxyGroupProvider.notifier)
+              .update((state) => state.copyWith(preferASN: next)),
+        ),
       ),
     };
   }

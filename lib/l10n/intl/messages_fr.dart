@@ -540,6 +540,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "closeConnections": MessageLookupByLibrary.simpleMessage(
       "Fermer les connexions",
     ),
+    "collectData": MessageLookupByLibrary.simpleMessage(
+      "Collecter les données d’entraînement",
+    ),
     "color": MessageLookupByLibrary.simpleMessage("Couleur"),
     "colorStyle": MessageLookupByLibrary.simpleMessage("Style de couleur"),
     "columns": MessageLookupByLibrary.simpleMessage("Colonnes"),
@@ -1646,6 +1649,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "pluginUsername": MessageLookupByLibrary.simpleMessage(
       "Nom d’utilisateur du plugin",
     ),
+    "policyPriority": MessageLookupByLibrary.simpleMessage(
+      "Priorité de politique",
+    ),
     "port": MessageLookupByLibrary.simpleMessage("Port"),
     "portConflictTip": MessageLookupByLibrary.simpleMessage(
       "Veuillez saisir un autre port",
@@ -1655,6 +1661,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "portValue": m76,
     "ports": MessageLookupByLibrary.simpleMessage("Ports"),
     "preSharedKey": MessageLookupByLibrary.simpleMessage("Clé prépartagée"),
+    "preferAsn": MessageLookupByLibrary.simpleMessage("Préférer le même ASN"),
     "preferred": MessageLookupByLibrary.simpleMessage("Préféré"),
     "prerequisites": MessageLookupByLibrary.simpleMessage("Prérequis"),
     "pressKeyboard": MessageLookupByLibrary.simpleMessage(
@@ -2002,6 +2009,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "safeMode": MessageLookupByLibrary.simpleMessage("Mode sans échec"),
     "safeModeAppTitle": m88,
+    "sampleRate": MessageLookupByLibrary.simpleMessage(
+      "Taux d’échantillonnage",
+    ),
     "saturation": MessageLookupByLibrary.simpleMessage("Saturation"),
     "save": MessageLookupByLibrary.simpleMessage("Enregistrer"),
     "saveChanges": MessageLookupByLibrary.simpleMessage(
@@ -2129,6 +2139,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "slide": MessageLookupByLibrary.simpleMessage("Glissement"),
     "sliders": MessageLookupByLibrary.simpleMessage("Curseurs"),
+    "smartGroup": MessageLookupByLibrary.simpleMessage("Smart"),
     "sniffProtocols": MessageLookupByLibrary.simpleMessage("Protocoles"),
     "sniffer": MessageLookupByLibrary.simpleMessage("Sniffer"),
     "socksPort": MessageLookupByLibrary.simpleMessage("Port SOCKS"),
@@ -2302,6 +2313,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "urlRewrite": MessageLookupByLibrary.simpleMessage("Réécriture d’URL"),
     "urlTip": m98,
     "useHosts": MessageLookupByLibrary.simpleMessage("Utiliser hosts"),
+    "useLightGBM": MessageLookupByLibrary.simpleMessage(
+      "Prédire les poids avec LightGBM",
+    ),
     "useSystemHosts": MessageLookupByLibrary.simpleMessage(
       "Utiliser les hosts du système",
     ),

@@ -102,7 +102,7 @@ final _optionSheet = find.byWidgetPredicate(
 
 Future<void> _addOption(WidgetTester tester, String label) async {
   await _openOptions(tester);
-  final option = find.descendant(of: _optionSheet, matching: find.text(label));
+  final option = await _scrolledOption(tester, label);
   await tester.ensureVisible(option);
   await tester.pump();
   await tester.tap(option);
@@ -124,6 +124,42 @@ Future<void> _openOptions(WidgetTester tester) async {
   await tester.tap(add);
   await tester.pumpAndSettle();
   expect(_optionSheet, findsOneWidget);
+}
+
+/// The option sheet builds its rows lazily, so an entry far down the list is
+/// only in the tree once the sheet has scrolled to it.
+Future<Finder> _scrolledOption(WidgetTester tester, String label) async {
+  final option = find.descendant(of: _optionSheet, matching: find.text(label));
+  await tester.scrollUntilVisible(
+    option,
+    200,
+    scrollable: find
+        .descendant(of: _optionSheet, matching: find.byType(Scrollable))
+        .first,
+  );
+  await tester.pumpAndSettle();
+  return option;
+}
+
+/// The options section builds its rows lazily, so a row low in the page is only
+/// in the tree once the page has scrolled to it.
+Future<Finder> _scrolledRow(WidgetTester tester, String label) async {
+  final rows = find.ancestor(
+    of: find.text(label),
+    matching: find.byType(FormRow),
+  );
+  if (rows.evaluate().isEmpty) {
+    final anchor = find.ancestor(
+      of: find.text(currentAppLocalizations.name),
+      matching: find.byType(Scrollable),
+    );
+    final page = anchor.evaluate().isNotEmpty
+        ? anchor.first
+        : find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(rows, 200, scrollable: page);
+    await tester.pumpAndSettle();
+  }
+  return _rowOf(label);
 }
 
 Finder _bannerText(String text) => find.descendant(
@@ -939,33 +975,79 @@ void main() {
       expect(find.text(currentAppLocalizations.strategy), findsNothing);
     });
 
-    testWidgets('offers strategy only to a load-balance group', (tester) async {
+    testWidgets('offers the smart options only to a smart group', (
+      tester,
+    ) async {
+      final l = currentAppLocalizations;
       container = buildContainer(_group());
 
       await pumpGroupSheet(tester);
+      await _openOptions(tester);
+      expect(find.text(l.policyPriority), findsNothing);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
       container
           .read(proxyGroupProvider.notifier)
-          .update((state) => state.copyWith(type: GroupType.LoadBalance));
+          .update((state) => state.copyWith(type: GroupType.Smart));
       await tester.pump();
-      await _addOption(tester, currentAppLocalizations.strategy);
+      await _openOptions(tester);
 
-      expect(find.text(currentAppLocalizations.strategy), findsOneWidget);
-      expect(
-        find.text(LoadBalanceStrategy.consistentHashing.value),
-        findsOneWidget,
+      expect(await _scrolledOption(tester, l.policyPriority), findsOneWidget);
+      expect(await _scrolledOption(tester, l.useLightGBM), findsOneWidget);
+      expect(await _scrolledOption(tester, l.collectData), findsOneWidget);
+      expect(await _scrolledOption(tester, l.sampleRate), findsOneWidget);
+      expect(await _scrolledOption(tester, l.preferAsn), findsOneWidget);
+      expect(await _scrolledOption(tester, l.tolerance), findsOneWidget);
+    });
+
+    testWidgets('a smart group edits its tuning rows', (tester) async {
+      final l = currentAppLocalizations;
+      container = buildContainer(
+        _group().copyWith(
+          type: GroupType.Smart,
+          policyPriority: 'Premium:0.9',
+          sampleRate: 0.25,
+          useLightGBM: false,
+        ),
       );
 
-      await tester.ensureVisible(find.text(currentAppLocalizations.strategy));
+      await pumpGroupSheet(tester);
       await tester.pump();
-      await tester.tap(find.text(currentAppLocalizations.strategy));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(LoadBalanceStrategy.roundRobin.value));
-      await tester.pumpAndSettle();
 
-      expect(
-        container.read(proxyGroupProvider).strategy,
-        LoadBalanceStrategy.roundRobin,
+      final priorityRow = await _scrolledRow(tester, l.policyPriority);
+      await tester.ensureVisible(priorityRow);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.descendant(of: priorityRow, matching: find.byType(TextFormField)),
+        'SG:1.3',
       );
+      await tester.pump();
+
+      final rateRow = await _scrolledRow(tester, l.sampleRate);
+      await tester.ensureVisible(rateRow);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.descendant(of: rateRow, matching: find.byType(TextFormField)),
+        '0,5',
+      );
+      await tester.pump();
+
+      final lightRow = await _scrolledRow(tester, l.useLightGBM);
+      await tester.ensureVisible(lightRow);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(of: lightRow, matching: find.byType(Switch)),
+      );
+      await tester.pump();
+
+      final group = container.read(proxyGroupProvider);
+      expect(group.policyPriority, 'SG:1.3');
+      expect(group.sampleRate, 0.5);
+      expect(group.useLightGBM, isTrue);
+      expect(group.definition['policy-priority'], 'SG:1.3');
+      expect(group.definition['sample-rate'], 0.5);
+      expect(group.definition['uselightgbm'], isTrue);
     });
 
     testWidgets('writes the timeout the core reads in milliseconds', (

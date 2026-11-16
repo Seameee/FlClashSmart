@@ -4636,6 +4636,56 @@ class AppLocalizations {
     return Intl.message('Tolerance', name: 'tolerance', desc: '', args: []);
   }
 
+  /// `Smart`
+  String get smartGroup {
+    return Intl.message('Smart', name: 'smartGroup', desc: '', args: []);
+  }
+
+  /// `Policy priority`
+  String get policyPriority {
+    return Intl.message(
+      'Policy priority',
+      name: 'policyPriority',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Predict weights with LightGBM`
+  String get useLightGBM {
+    return Intl.message(
+      'Predict weights with LightGBM',
+      name: 'useLightGBM',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Collect training data`
+  String get collectData {
+    return Intl.message(
+      'Collect training data',
+      name: 'collectData',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sample rate`
+  String get sampleRate {
+    return Intl.message('Sample rate', name: 'sampleRate', desc: '', args: []);
+  }
+
+  /// `Prefer the same ASN`
+  String get preferAsn {
+    return Intl.message(
+      'Prefer the same ASN',
+      name: 'preferAsn',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Enter the proxy group name`
   String get inputProxyGroupName {
     return Intl.message(

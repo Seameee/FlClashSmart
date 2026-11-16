@@ -538,6 +538,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "closeConnections": MessageLookupByLibrary.simpleMessage(
       "Cerrar conexiones",
     ),
+    "collectData": MessageLookupByLibrary.simpleMessage(
+      "Recopilar datos de entrenamiento",
+    ),
     "color": MessageLookupByLibrary.simpleMessage("Color"),
     "colorStyle": MessageLookupByLibrary.simpleMessage("Estilo de color"),
     "columns": MessageLookupByLibrary.simpleMessage("Columnas"),
@@ -1640,6 +1643,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "pluginUsername": MessageLookupByLibrary.simpleMessage(
       "Usuario del complemento",
     ),
+    "policyPriority": MessageLookupByLibrary.simpleMessage(
+      "Prioridad de política",
+    ),
     "port": MessageLookupByLibrary.simpleMessage("Puerto"),
     "portConflictTip": MessageLookupByLibrary.simpleMessage(
       "Introduce un puerto diferente",
@@ -1649,6 +1655,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "portValue": m76,
     "ports": MessageLookupByLibrary.simpleMessage("Puertos"),
     "preSharedKey": MessageLookupByLibrary.simpleMessage("Clave precompartida"),
+    "preferAsn": MessageLookupByLibrary.simpleMessage("Preferir el mismo ASN"),
     "preferred": MessageLookupByLibrary.simpleMessage("Preferido"),
     "prerequisites": MessageLookupByLibrary.simpleMessage("Requisitos previos"),
     "pressKeyboard": MessageLookupByLibrary.simpleMessage(
@@ -2002,6 +2009,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "safeMode": MessageLookupByLibrary.simpleMessage("Modo seguro"),
     "safeModeAppTitle": m88,
+    "sampleRate": MessageLookupByLibrary.simpleMessage("Tasa de muestreo"),
     "saturation": MessageLookupByLibrary.simpleMessage("Saturación"),
     "save": MessageLookupByLibrary.simpleMessage("Guardar"),
     "saveChanges": MessageLookupByLibrary.simpleMessage(
@@ -2127,6 +2135,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "slide": MessageLookupByLibrary.simpleMessage("Deslizar"),
     "sliders": MessageLookupByLibrary.simpleMessage("Reguladores"),
+    "smartGroup": MessageLookupByLibrary.simpleMessage("Smart"),
     "sniffProtocols": MessageLookupByLibrary.simpleMessage("Protocolos"),
     "sniffer": MessageLookupByLibrary.simpleMessage("Sniffer"),
     "socksPort": MessageLookupByLibrary.simpleMessage("Puerto SOCKS"),
@@ -2298,6 +2307,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "urlRewrite": MessageLookupByLibrary.simpleMessage("Reescritura de URL"),
     "urlTip": m98,
     "useHosts": MessageLookupByLibrary.simpleMessage("Usar hosts"),
+    "useLightGBM": MessageLookupByLibrary.simpleMessage(
+      "Predecir pesos con LightGBM",
+    ),
     "useSystemHosts": MessageLookupByLibrary.simpleMessage(
       "Usar hosts del sistema",
     ),
