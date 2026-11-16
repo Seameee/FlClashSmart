@@ -52,6 +52,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # pubspec.yaml resolves plugins/prism_ui, which is a submodule.
+          submodules: true
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
