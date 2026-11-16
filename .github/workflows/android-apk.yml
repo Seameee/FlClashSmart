@@ -1,0 +1,106 @@
+name: android-apk
+
+# The unit tests never compile Kotlin, the NDK, or gomobile's Core binding, so a
+# broken arm64 build only shows up here. This job builds the debug APK a preview
+# branch is tested from and keeps it as an artifact.
+
+on:
+  push:
+    branches:
+      - smart
+      - 'smart-**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '3.47.6'
+  GO_VERSION: '1.27.1'
+  NDK_VERSION: r28c
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  arm64:
+    name: arm64 debug APK
+    # A private copy pays for its Actions minutes, so it builds only when started
+    # by hand.
+    if: github.event_name == 'workflow_dispatch' || !github.event.repository.private
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: core/go.sum
+
+      - name: Setup NDK
+        id: ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: ${{ env.NDK_VERSION }}
+          add-to-path: true
+          link-to-sdk: true
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: plugins/rust_api/rust
+          cache-directories: .dart_tool/hooks_runner
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build arm64 debug APK
+        env:
+          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+        run: flutter build apk --debug --target-platform android-arm64
+
+      # A debug APK packs every ABI unless the build was narrowed, and a missing
+      # Core is exactly what this job exists to catch.
+      - name: Verify the Core and the Helper are aarch64
+        run: |
+          apk=build/app/outputs/flutter-apk/app-debug.apk
+          test -f "$apk"
+          for so in libclash librust_api; do
+            unzip -p "$apk" "lib/arm64-v8a/$so.so" > "/tmp/$so.so"
+            file "/tmp/$so.so"
+            file "/tmp/$so.so" | grep -q 'ARM aarch64'
+          done
+          if unzip -l "$apk" | grep -q 'lib/arm64-v8a/.*x86'; then
+            echo 'an x86 library leaked into the arm64 APK' >&2
+            exit 1
+          fi
+
+      - name: Upload the APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-arm64-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
